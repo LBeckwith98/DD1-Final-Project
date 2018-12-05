@@ -16,20 +16,21 @@
 
 module intxnCtrl(clk, reset_n, car, lights);
 	input 				clk, car, reset_n;
-	output	reg	[6:0]	lights;
+	output reg	[5:0]	lights;
 	
 	reg					reset;
 	reg 		[15:0]	Top;
 	reg 		[11:0]	Bottom;
-	reg			[2:0] 	sec;
+	reg			[3:0] 	sec;
 	reg			[1:0]	state, prev_state; // 00: GNS, 01: YNS, 10 GEW, 11 YEW; 
 
 initial begin
 	Top = 16'h0000;
 	Bottom = 12'h000;
 	state = 2'b00;
-	sec = 3'b0;
+	sec = 4'b0;
 	reset = 1'b0;
+	lights = 6'b000000;
 end
 	
 always @(posedge clk)begin
@@ -42,6 +43,8 @@ always @(posedge clk)begin
 			lights <= 6'b001100;
 		3'b11:
 			lights <= 6'b001010;
+		default:
+			lights <= 6'b111111;
 	endcase
 end
 
@@ -51,49 +54,62 @@ always @(*)begin
 		reset <= 1'b1;
 		state <= 2'b00;
 	end
-	else if(reset == 1'b1)
-		reset = 1'b0;
-	case(state)
-		2'b00: begin
-			if (car == 1'b1) begin
+	else begin
+		reset <= 1'b0;
+		
+		case(state)
+			2'b00: begin
 				reset <= 1'b1;
-				state <= 2'b01;
+				if (car == 1'b1) begin
+					state <= 2'b01;
+				end
+				else begin
+					state <= 2'b00;
+				end
 			end
-		end
-		2'b01: begin
-			if (sec >= 3'd1)begin
-				state <= 2'b10;
-				reset <= 1'b1;
+			2'b01: begin
+				if (sec >= 4'd1)begin
+					state <= 2'b10;
+					//reset <= 1'b1;
+				end
+				else
+					state <= 2'b01;
 			end
-		end
-		3'b10: begin
-			if(sec >= 3'd5) begin
-				state <= 2'b11;
-				reset <= 1'b1;
+			2'b10: begin
+				if(sec >= 4'd5) begin
+					state <= 2'b11;
+					//reset <= 1'b1;
+				end
+				else
+					state <= 2'b10;
 			end
-		end
-		3'b11: begin
-			if(sec >= 3'b1) begin
-				state <= 2'b00;
-				reset <= 1'b1;
+			2'b11: begin
+				if(sec >= 4'd7) begin
+					state <= 2'b00;
+					//reset <= 1'b1;
+				end
+				else
+					state <= 2'b11;
 			end
-		end
-	endcase
+		endcase
+	end
 end 
 always @(posedge clk or posedge reset)begin
 	
 	if(reset == 1'b1) begin
-		sec <= 3'b000;
+		sec <= 4'b0000;
 		Top <= 16'h0000;
 		Bottom <= 12'h000;
 	end
 	else if (Top == 16'h2FAF && Bottom == 12'h080) begin
+	//else if (Top == 16'h0001 && Bottom == 12'hFFF) begin
 		Top <= 16'h0000;
 		Bottom <= 12'h000;
 		
-		sec = sec + 3'b001;
+		sec <= sec + 4'b0001;
 	end
 	else if(Bottom == 12'hFFF)begin
+	//else if(Bottom == 12'hFFF)begin
 		Bottom <= 12'h000;
 		Top <= Top + 16'h0001;
 	end

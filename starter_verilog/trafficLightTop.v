@@ -23,7 +23,6 @@ module trafficLightTop(CLOCK_50, KEY, LED);
    output [9:0] LED;
 
    wire       car_east, car_west, car_ew;
-   wire [9:0] lights_currently_lit;
    wire [5:0] street_lights;
 
    keypressed K1 (.clock(CLOCK_50),             // 50 MHz FPGA Clock
@@ -40,14 +39,15 @@ module trafficLightTop(CLOCK_50, KEY, LED);
             car_east,                           // Input high if a car waits on the east side
             car_west);                          // Input high if a car waits on the west side
 
-   intxnCtrl INT1 (.clock(CLOCK_50),            // 50 MHz FPGA Clock
+   intxnCtrl INT1 (.clk(CLOCK_50),            // 50 MHz FPGA Clock
                    .reset_n(KEY[0]),            // KEY0 is the system reset - ACTIVE LOW
-                   .car_detected(car_ew),       // High OR'd input drives the traffic light FSM
-                   .lights_out(street_lights)); // FSM output connects to the LED lights
+                   .car(car_ew),       // High OR'd input drives the traffic light FSM
+                   .lights(street_lights)); // FSM output connects to the LED lights
 
-   assign LED = { street_lights[5:3],           // MSBs toggle east-west lights
-                  3'b0,                         // Leaving the middle LEDs unused
-                  street_lights[2:0]            // LSBs toggle north-south lights
+   assign LED = { street_lights[5], street_lights[4],  street_lights[3],            // MSBs toggle east-west lights
+                  3'b000,                         // Leaving the middle LEDs unused
+                  street_lights[2], street_lights[1],  street_lights[0]            // LSBs toggle north-south lights
                 };
 
 endmodule
+
